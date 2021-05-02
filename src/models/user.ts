@@ -37,3 +37,12 @@ export function initUserModel() {
     modelName: 'users'
   });
 }
+
+export function createPredefinedUsers() {
+  UserModel.bulkCreate([
+    { login: 'user1', password: '12345', age: 82 },
+    { login: 'user2', password: 'qwerty', age: 46 },
+    { login: 'Ben', password: 'ASDFG', age: 84 },
+    { login: 'Artem', password: 'passsssword', age: 29 }
+  ])
+}

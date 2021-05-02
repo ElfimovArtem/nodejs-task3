@@ -1,22 +1,22 @@
-import { IAccessorToUserData } from '../data-access/user';
+import { IUserDataHandler } from '../data-access/user';
 import { User } from '../types/user';
 
 export interface IUserService {
   getById(id: string): Promise<User | null>;
-  createOrUpdate(user: User): Promise<User | null>;
+  createUser(user: User): Promise<User | null>;
   removeSoftly(id: string): Promise<boolean>;
   search(login: any, limit: any): Promise<User[]>;
 }
 
 export class UserService implements IUserService {
-  constructor(private AccessorToUserData: IAccessorToUserData<User>) {}
+  constructor(private userDataHandler: IUserDataHandler<User>) {}
 
   getById(id: string) {
-    return this.AccessorToUserData.getById(id);
+    return this.userDataHandler.getById(id);
   }
 
-  createOrUpdate(user: User) {
-    return this.AccessorToUserData.createOrUpdate(user);
+  createUser(user: User) {
+    return this.userDataHandler.createUser(user);
   }
 
   async removeSoftly(id: string) {
@@ -26,7 +26,7 @@ export class UserService implements IUserService {
       throw new Error('User not found!');
     }
 
-    const updatedUser = await this.AccessorToUserData.createOrUpdate({
+    const updatedUser = await this.userDataHandler.updateUser({
       ...found,
       isDeleted: true
     });
@@ -39,7 +39,7 @@ export class UserService implements IUserService {
   }
 
   async search(login: string, limit: number) {
-    const foundUsers = await this.AccessorToUserData.getSomeBySubstring(login, limit);
+    const foundUsers = await this.userDataHandler.getByParams(login, limit);
 
     if (foundUsers) {
       return foundUsers;

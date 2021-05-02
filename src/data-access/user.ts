@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { UserModel, initUserModel } from '../models/user';
+import { UserModel, initUserModel, createPredefinedUsers } from '../models/user';
 
 import { User } from '../types/user';
 
@@ -17,24 +17,20 @@ function convertToUser(model: UserModel): User | null {
   };
 }
 
-export interface IAccessorToUserData<T> {
+export interface IUserDataHandler<T> {
   getById(id: string): Promise<T | null>;
-  createOrUpdate(user: User): Promise<User | null>;
-  getSomeBySubstring(regexpString: string, limit?: number | undefined): Promise<User[] | null>;
+  createUser(user: User): Promise<User | null>;
+  updateUser(user: User): Promise<User | null>;
+  getByParams(regexpString: string, limit?: number | undefined): Promise<User[]>;
 }
 
-export class AccessorToUserData implements IAccessorToUserData<User> {
+export class userDataHandler implements IUserDataHandler<User> {
   constructor() {
     initUserModel();
 
     UserModel
       .sync({ force: true })
-      .then(() => UserModel.bulkCreate([
-        { login: 'user1', password: '12345', age: 82 },
-        { login: 'user2', password: 'qwerty', age: 46 },
-        { login: 'Ben', password: 'ASDFG', age: 84 },
-        { login: 'Artem', password: 'passsssword', age: 29 }
-      ]));
+      .then(() => createPredefinedUsers());
   }
 
   async getById(id: string): Promise<User | null> {
@@ -43,20 +39,7 @@ export class AccessorToUserData implements IAccessorToUserData<User> {
     return convertToUser(user);
   }
 
-  async createOrUpdate(user: User): Promise<User | null> {
-    const found: UserModel = await UserModel.findByPk(user.id);
-
-    if (found) {
-      const updatedUser =  await found.update({
-        login: user.login,
-        password: user.password,
-        age: user.age,
-        is_deleted: user.isDeleted
-      });
-
-      return convertToUser(updatedUser);
-    }
-
+  async createUser(user: User): Promise<User | null> {
     const newUser = await UserModel.create({
       id: user.id,
       login: user.login,
@@ -68,7 +51,20 @@ export class AccessorToUserData implements IAccessorToUserData<User> {
     return convertToUser(newUser);
   }
 
-  async getSomeBySubstring(regexpString: string, limit?: number | undefined): Promise<User[]> {
+  async updateUser(user: User): Promise<User | null> {
+    const found: UserModel = await UserModel.findByPk(user && user.id);
+
+    const updatedUser =  await found && found.update({
+      login: user.login,
+      password: user.password,
+      age: user.age,
+      is_deleted: user.isDeleted
+    });
+
+    return convertToUser(updatedUser);
+  }
+
+  async getByParams(regexpString: string, limit?: number | undefined): Promise<User[]> {
     const users = await UserModel.findAll({
       where: {
         login: {
